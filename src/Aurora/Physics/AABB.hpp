@@ -2,6 +2,12 @@
 
 #include <Aurora/Core/Vector.hpp>
 
+
+#if defined(max)
+#undef max
+#undef min
+#endif
+
 namespace Aurora
 {
 	struct BBCollisionResult

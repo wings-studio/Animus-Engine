@@ -31,7 +31,7 @@
 #include <backends/imgui_impl_opengl3.h>
 #include "Tools/IconsFontAwesome5.hpp"
 
-#include <TracyOpenGL.hpp>
+//#include "TracyOpenGL.hpp"
 
 #include "Editor/MainEditorPanel.hpp"
 #include "Aurora/Core/Timer.hpp"

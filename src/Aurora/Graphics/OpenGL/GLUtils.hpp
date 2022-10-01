@@ -9,6 +9,15 @@
 #include "../Base/Format.hpp"
 #include "../Base/ShaderBase.hpp"
 
+
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
 static const char* GLErrorToString(GLenum e)
 {
 	switch (e)

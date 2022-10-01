@@ -10,6 +10,14 @@
 #include "Aurora/Core/Vector.hpp"
 #include "Aurora/Resource/ResourceName.hpp"
 
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
 namespace Aurora
 {
 	enum TEX_FLAGS : uint8_t

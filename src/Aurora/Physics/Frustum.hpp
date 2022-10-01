@@ -2,6 +2,12 @@
 
 #include "AABB.hpp"
 
+
+#if defined(max)
+#undef max
+#undef min
+#endif
+
 namespace Aurora
 {
 	// Source: https://gist.github.com/podgorskiy/e698d18879588ada9014768e3e82a644
