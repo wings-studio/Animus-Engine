@@ -79,35 +79,36 @@ public:
 	{
 		float m_FlySpeed = 10.0f;
 
-		//GetTransform().Rotation.x += delta;
+        auto rotation = GetTransform().GetRotation();
+        rotation.x -= ImGui::GetIO().MouseDelta.y * 0.1f;
+		rotation.y -= ImGui::GetIO().MouseDelta.x * 0.1f;
 
-		/*GetTransform().Rotation.x -= ImGui::GetIO().MouseDelta.y * 0.1f;
-		GetTransform().Rotation.y -= ImGui::GetIO().MouseDelta.x * 0.1f;
+		rotation.x = glm::clamp(rotation.x, -90.0f, 90.0f);
+		rotation.y = fmod(rotation.y, 360.0f);
 
-		GetTransform().Rotation.x = glm::clamp(GetTransform().Rotation.x, -90.0f, 90.0f);
-		GetTransform().Rotation.y = fmod(GetTransform().Rotation.y, 360.0f);
+        GetTransform().SetRotation(rotation);
 
 		Matrix4 transform = m_Camera->GetTransformationMatrix();
 
 		if(ImGui::GetIO().KeysDown[ImGui::GetKeyIndex(ImGuiKey_W)])
 		{
-			GetTransform().Location -= Vector3(transform[2]) * (float)delta * m_FlySpeed;
+			GetTransform().AddLocation(-Vector3(transform[2]) * (float)delta * m_FlySpeed);
 		}
 
 		if(ImGui::GetIO().KeysDown[ImGui::GetKeyIndex(ImGuiKey_S)])
 		{
-			GetTransform().Location += Vector3(transform[2]) * (float)delta * m_FlySpeed;
+			GetTransform().AddLocation(Vector3(transform[2]) * (float)delta * m_FlySpeed);
 		}
 
 		if(ImGui::GetIO().KeysDown[ImGui::GetKeyIndex(ImGuiKey_A)])
 		{
-			GetTransform().Location -= Vector3(transform[0]) * (float)delta * m_FlySpeed;
+			GetTransform().AddLocation(-Vector3(transform[0]) * (float)delta * m_FlySpeed);
 		}
 
 		if(ImGui::GetIO().KeysDown[ImGui::GetKeyIndex(ImGuiKey_D)])
 		{
-			GetTransform().Location += Vector3(transform[0]) * (float)delta * m_FlySpeed;
-		}*/
+			GetTransform().AddLocation(Vector3(transform[0]) * (float)delta * m_FlySpeed);
+		}
 	}
 
 	CameraComponent* GetCamera()
@@ -124,12 +125,26 @@ enum UI_TYPES
 
 class TestUI : public UserInterface
 {
+    Rml::ElementDocument* menu;
+
+    struct ApplicationData {
+        bool show_text = true;
+        Rml::String animal = "dog";
+    } my_data;
+
 public:
 	explicit TestUI(UIID_t id) : UserInterface(id) {}
 
 	void BeginPlay() override
 	{
+        if (Rml::DataModelConstructor constructor = CreateDataModel("animals"))
+        {
+            constructor.Bind("show_text", &my_data.show_text);
+            constructor.Bind("animal", &my_data.animal);
+        }
 
+        menu = LoadAndRegisterDocument("Assets/Menu/TestMenu.rml");
+        //menu->Show();
 	}
 
 	void BeginDestroy() override
@@ -139,7 +154,7 @@ public:
 
 	void Tick(double delta) override
 	{
-
+        // dp spmething with menu
 	}
 };
 
@@ -149,6 +164,7 @@ public:
 	void BeginPlay() override
 	{
 		AddUserInterface<TestUI>(UI_MAINMENU);
+        GEngine->GetInputManager()->LockCursor();
 	}
 
 	void BeginDestroy() override
@@ -158,7 +174,10 @@ public:
 
 	void Tick(double delta) override
 	{
-
+        if (ImGui::GetIO().KeysDown[ImGui::GetKeyIndex(ImGuiKey_Escape)])
+        {
+            GEngine->Shutdown();
+        }
 	}
 };
 
@@ -171,7 +190,6 @@ class BaseAppContext : public AppContext
 	~BaseAppContext() override
 	{
 		delete sceneRenderer;
-
 	}
 
 	// FIXME: this is just an hack!
@@ -190,11 +208,11 @@ class BaseAppContext : public AppContext
 		testActor = GetScene()->SpawnActor<Actor, StaticMeshComponent>("TestActor", Vector3(0, 0, 0), {}, Vector3(0.01f));
 		//CameraComponent* cameraComponent = actor->AddComponent<CameraComponent>("Camera");
 
-		auto normalMap = GEngine->GetResourceManager()->LoadTexture("Assets/Textures/dry-rocky-ground-unity/dry-rocky-ground_normal-ogl.png");
+		Texture_ptr normalMap = GEngine->GetResourceManager()->LoadTexture("Assets/Textures/dry-rocky-ground-unity/dry-rocky-ground_normal-ogl.png");
 
 		if (importedData)
 		{
-			auto matDef = GEngine->GetResourceManager()->GetOrLoadMaterialDefinition("Assets/Materials/Base/Textured.matd");
+			MaterialDefinition_ptr matDef = GEngine->GetResourceManager()->GetOrLoadMaterialDefinition("Assets/Materials/Base/Textured.matd");
 
 			auto* meshComponent = StaticMeshComponent::Cast(testActor->GetRootComponent());
 			meshComponent->SetMesh(importedData.Mesh);
@@ -258,7 +276,7 @@ class BaseAppContext : public AppContext
 				//modelLoader.ImportAnimation(GEngine->GetResourceManager()->LoadFile("Assets/Aim/jump.fbx"), skeletalMesh);
 				//modelLoader.ImportAnimation(GEngine->GetResourceManager()->LoadFile("Assets/Aim/walk.fbx"), skeletalMesh);
 
-				SkeletalMeshComponent* skeletalMeshComponent = GetScene()->SpawnActor<Actor, SkeletalMeshComponent>("AnimationTest")->GetRootComponent<SkeletalMeshComponent>();
+				auto* skeletalMeshComponent = GetScene()->SpawnActor<Actor, SkeletalMeshComponent>("AnimationTest")->GetRootComponent<SkeletalMeshComponent>();
 				skeletalMeshComponent->SetMesh(skeletalMesh);
 				skeletalMeshComponent->SetIgnoreFrustumChecks(true);
 
@@ -275,7 +293,7 @@ class BaseAppContext : public AppContext
 		}
 
 		{ // Particle test
-			ParticleSystemComponent* particleSystemComponent = GetScene()->SpawnActor<Actor, ParticleSystemComponent>("Particles")->GetRootComponent<ParticleSystemComponent>();
+			//ParticleSystemComponent* particleSystemComponent = GetScene()->SpawnActor<Actor, ParticleSystemComponent>("Particles")->GetRootComponent<ParticleSystemComponent>();
 
 		}
 	}
@@ -306,7 +324,7 @@ int main()
 	windowDefinition.Title = "Aurora - BaseApp";
 
 	Aurora::AuroraEngine engine;
-	engine.Init(new BaseAppContext(), windowDefinition, true);
+	engine.Init(new BaseAppContext(), windowDefinition, false);
 	engine.Run();
 	return 0;
 }
